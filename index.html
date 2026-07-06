@@ -88,12 +88,6 @@
   <div class="card">
     <h2>2. 人物（キャラ設定）</h2>
     <div class="grid">
-      <div><label>年齢感</label>
-        <select id="age">
-          <option>20歳前後</option><option>20代前半</option><option selected>20代半ば</option>
-          <option>20代後半</option><option>30代前半</option>
-        </select>
-      </div>
       <div><label>肌・メイク</label><select id="makeup"></select></div>
       <div><label>髪色</label>
         <select id="hairColor">
@@ -167,6 +161,7 @@ const BODY = [
   { l: "胸元ボリューム", t: "女性らしくボリュームのある胸元とメリハリのある体型。布の自然な張りと重力に沿った落ち感、姿勢によるシルエットの変化でそれが自然に分かる。現実的な身体比率で、過剰な谷間強調や不自然な誇張はしない" },
   { l: "グラマラス", t: "成熟したグラマラスな体型。豊かな胸元と腰の曲線の対比が服の上から自然に分かる、現実的な身体比率。過剰な誇張や不自然な巨大化はしない" },
   { l: "たわわ・最大盛り", t: "非常に豊かでボリュームのある胸元と、細いウエストの対比が際立つメリハリの強い体型。胸の重みで服の布が強く張り、重力に沿った深い落ち感と、姿勢の変化で生まれる大きなシルエットの変化でボリュームがはっきり伝わる。現実に存在する範囲の身体比率は保ち、不自然な巨大化や過剰な谷間強調はしない" },
+  { l: "爆乳級・規格外", t: "規格外に豊かな胸元。トップスのサイズが明らかに合っておらず、布が限界まで張って縫い目やボタンの間に横方向の引きつりジワが走り、胸の重みによる深い落ち感と動きの気配が布越しにはっきり伝わる。細いウエストとの対比が極端に際立つ圧倒的なメリハリの体型。現実の人体として成立する比率と自然な重力表現は保つ" },
   { l: "自然なメリハリ", t: "ややメリハリのある自然な体型。服のシルエットと布の張りで体のラインがさりげなく分かる" },
   { l: "華奢・スレンダー", t: "すらりとした華奢寄りのモデル体型、現実的な身体比率" },
   { l: "ふんわり柔らか", t: "全体に丸みのあるふんわり柔らかい体型。健康的で現実的な身体比率" },
@@ -625,9 +620,9 @@ const pickT = (id, arr) => arr[+val(id)].t;
 
 function personBlock(useRef, t) {
   if (useRef) {
-    return `添付画像の人物を最重要リファレンスとして使用し、顔立ち・髪型・髪色・メイク・雰囲気を同一人物として完全に維持してください。${val("age")}の日本人女性。${pickT("body", BODY)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}`;
+    return `添付画像の人物を最重要リファレンスとして使用し、顔立ち・髪型・髪色・メイク・雰囲気を同一人物として完全に維持してください。20歳前後の若々しい成人の日本人女性。${pickT("body", BODY)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}`;
   }
-  return `${val("age")}の日本人女性。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}`;
+  return `20歳前後の若々しい成人の日本人女性。透明感のあるみずみずしい若い肌。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}`;
 }
 
 function generate() {
@@ -668,7 +663,7 @@ function generateSheet() {
   const person = useRef
     ? `添付画像の人物・キャラクターを最重要リファレンスとして使用し、同一人物に見えるキャラクターシートを作成してください。添付画像が実写なら実写調を、イラストならその絵柄・線・塗り・質感を維持してください。`
     : `以下の人物のキャラクターシートを作成してください。実写調でフォトリアルな日本人女性。
-${val("age")}の日本人女性。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。`;
+20歳前後の若々しい成人の日本人女性。透明感のあるみずみずしい若い肌。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。`;
   const prompt =
 `${useRef ? "（元にしたい画像を添付してから送信してください）\n" : ""}${person}
 
@@ -692,7 +687,7 @@ ${val("age")}の日本人女性。${val("mood")}雰囲気の、幼さのない�
 function randomize() {
   const pick = sel => { const el = document.getElementById(sel); el.selectedIndex = Math.floor(Math.random() * el.options.length); };
   pick("scene"); fillSceneOptions();
-  ["aspect","reason","age","body","makeup","hairColor","hairStyle","mood","expression","outfit","pose","framing","camera"].forEach(pick);
+  ["aspect","reason","body","makeup","hairColor","hairStyle","mood","expression","outfit","pose","framing","camera"].forEach(pick);
   generate();
 }
 
