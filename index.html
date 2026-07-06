@@ -112,7 +112,22 @@
       </div>
       <div><label>表情</label><select id="expression"></select></div>
     </div>
-    <p class="tips"><b>キャラ固定のコツ:</b> 気に入った生成画像をChatGPTに添付して「この人物と同じ顔で」と指示すると連続性が出ます。人物設定は変えずにシーンだけ変えるのも有効。</p>
+  </div>
+
+  <div class="card">
+    <h2>2.5 キャラ固定（リファレンス）</h2>
+    <div class="grid">
+      <div><label>顔リファレンス</label>
+        <select id="refmode">
+          <option value="none">使わない（毎回新しい顔）</option>
+          <option value="use">添付画像の顔を維持して生成</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-bottom:0">
+      <button class="btn-sub" onclick="generateSheet()">🪪 キャラシート用プロンプトを出す</button>
+    </div>
+    <p class="tips"><b>顔固定の手順:</b> ①好みの顔が出たら「キャラシート用プロンプト」でキャラクターシート（正面・横顔・表情差分の一覧画像）を作る → ②以後はそのシート画像をChatGPTに<b>添付してから</b>「顔を維持」モードのプロンプトを送る → ③シーンだけ変えれば同じ子の写真が増えていきます。<br>※「顔を維持」モード中は髪色・髪型・メイクの選択より添付画像が優先されます。</p>
   </div>
 
   <div class="card">
@@ -151,6 +166,7 @@
 const BODY = [
   { l: "胸元ボリューム", t: "女性らしくボリュームのある胸元とメリハリのある体型。布の自然な張りと重力に沿った落ち感、姿勢によるシルエットの変化でそれが自然に分かる。現実的な身体比率で、過剰な谷間強調や不自然な誇張はしない" },
   { l: "グラマラス", t: "成熟したグラマラスな体型。豊かな胸元と腰の曲線の対比が服の上から自然に分かる、現実的な身体比率。過剰な誇張や不自然な巨大化はしない" },
+  { l: "たわわ・最大盛り", t: "非常に豊かでボリュームのある胸元と、細いウエストの対比が際立つメリハリの強い体型。胸の重みで服の布が強く張り、重力に沿った深い落ち感と、姿勢の変化で生まれる大きなシルエットの変化でボリュームがはっきり伝わる。現実に存在する範囲の身体比率は保ち、不自然な巨大化や過剰な谷間強調はしない" },
   { l: "自然なメリハリ", t: "ややメリハリのある自然な体型。服のシルエットと布の張りで体のラインがさりげなく分かる" },
   { l: "華奢・スレンダー", t: "すらりとした華奢寄りのモデル体型、現実的な身体比率" },
   { l: "ふんわり柔らか", t: "全体に丸みのあるふんわり柔らかい体型。健康的で現実的な身体比率" },
@@ -607,11 +623,19 @@ fillSceneOptions();
 const val = id => document.getElementById(id).value;
 const pickT = (id, arr) => arr[+val(id)].t;
 
+function personBlock(useRef, t) {
+  if (useRef) {
+    return `添付画像の人物を最重要リファレンスとして使用し、顔立ち・髪型・髪色・メイク・雰囲気を同一人物として完全に維持してください。${val("age")}の日本人女性。${pickT("body", BODY)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}`;
+  }
+  return `${val("age")}の日本人女性。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}`;
+}
+
 function generate() {
   const s = SCENES[val("scene")];
   const t = TASTE[val("taste")];
+  const useRef = val("refmode") === "use";
   const prompt =
-`以下の内容に従って画像を1枚生成してください。過度な性的表現のない、自然な日常ポートレート写真です。アスペクト比は${val("aspect")}。
+`${useRef ? "（この人物の画像を添付してから送信してください）\n" : ""}以下の内容に従って画像を1枚生成してください。過度な性的表現のない、自然な日常ポートレート写真です。アスペクト比は${val("aspect")}。
 
 【主題】${val("scene")}
 
@@ -619,7 +643,7 @@ function generate() {
 ${pickT("reason", REASON)}。作り込んだ撮影ではなく、日常の一瞬がそのまま写真に残った空気感。
 
 【人物・表情】
-${val("age")}の日本人女性。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。瞳には小さく澄んだキャッチライト。${pickT("expression", EXPRESSION)}。${t.person ? t.person + "。" : ""}
+${personBlock(useRef, t)}
 
 【服装・ポーズ】
 ${pickT("outfit", s.outfits)}。
@@ -637,6 +661,32 @@ ${s.style}。${t.style ? t.style + "。" : ""}超写実的、フォトリアル�
 【避けるもの】
 ${NEGATIVE}`;
   document.getElementById("output").value = prompt;
+}
+
+function generateSheet() {
+  const useRef = val("refmode") === "use";
+  const person = useRef
+    ? `添付画像の人物・キャラクターを最重要リファレンスとして使用し、同一人物に見えるキャラクターシートを作成してください。添付画像が実写なら実写調を、イラストならその絵柄・線・塗り・質感を維持してください。`
+    : `以下の人物のキャラクターシートを作成してください。実写調でフォトリアルな日本人女性。
+${val("age")}の日本人女性。${val("mood")}雰囲気の、幼さのない整った顔立ち。${pickT("body", BODY)}。${val("hairColor")}の髪で、${pickT("hairStyle", HAIRSTYLE)}。${pickT("makeup", MAKEUP)}。`;
+  const prompt =
+`${useRef ? "（元にしたい画像を添付してから送信してください）\n" : ""}${person}
+
+【シートの構成】1枚の画像に以下をコラージュ形式で整列させる:
+・正面バストアップ／左横顔／右斜め45度のバストアップ
+・立ち姿の全身（服装はシンプルな白トップスとデニム）
+・表情差分4種（自然な微笑み／真顔／照れ笑い／ウインク)
+・目、鼻、口、髪の質感が分かる顔の拡大カット
+
+【ルール】
+・すべてのカットで顔立ち・髪・雰囲気を同一人物として完全に一致させる
+・背景は白、各カットの下に小さなラベル
+・過度な性的表現なし、自然で清潔なモデルシート
+・アスペクト比は横長4:3
+
+このシートは今後の画像生成で人物を固定するためのリファレンスとして使います。細部まで精密に描写してください。`;
+  document.getElementById("output").value = prompt;
+  document.getElementById("output").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function randomize() {
