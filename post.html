@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI美女 投稿文メーカー | X運用</title>
+<style>
+  :root {
+    --bg: #0f1117; --card: #1a1d27;
+    --text: #e8eaf0; --sub: #9aa0b0; --accent: #4da3ff; --accent2: #7c5cff;
+    --border: #2a2e3d; --input: #141722;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 16px 60px;
+  }
+  .container { max-width: 760px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  h1 {
+    font-size: 26px; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header p { color: var(--sub); font-size: 13px; margin-top: 8px; line-height: 1.7; }
+  header a { color: var(--accent); }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 15px; margin-bottom: 14px; color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  label { display: block; font-size: 12px; color: var(--sub); margin-bottom: 4px; }
+  select, input[type=text] {
+    width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--input); color: var(--text); font-size: 14px;
+  }
+  select:focus, input:focus, textarea:focus { outline: 1px solid var(--accent); }
+  .btn-row { display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+  button {
+    padding: 12px 22px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: transform .1s, opacity .2s;
+  }
+  button:active { transform: scale(.97); }
+  .btn-main { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #fff; flex: 1; }
+  .btn-sub { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-mini { padding: 8px 14px; font-size: 13px; }
+  textarea {
+    width: 100%; padding: 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--input); color: var(--text);
+    font-size: 13px; line-height: 1.8; resize: vertical;
+  }
+  #output { min-height: 280px; }
+  .copy-ok { background: #2ecc71 !important; }
+  footer { color: var(--sub); font-size: 11px; text-align: center; margin-top: 30px; line-height: 1.9; }
+  .tips { font-size: 12px; color: var(--sub); line-height: 1.8; margin-top: 10px; }
+  .tips b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>AI美女 投稿文メーカー</h1>
+    <p>ペルソナと画像の内容を選ぶだけで、投稿文を3案作らせるプロンプトを組み立てます。<br>コピーして ChatGPT に貼るだけ。画像は <a href="index.html">プロンプトメーカー</a> で。</p>
+  </header>
+
+  <div class="card">
+    <h2>1. ペルソナ（誰として投稿するか）</h2>
+    <div class="grid">
+      <div><label>保存済みペルソナ</label><select id="personaSlot" onchange="loadPersona()"></select></div>
+      <div><label>名前</label><input type="text" id="pName" placeholder="みさき"></div>
+      <div><label>年齢（20歳以上）</label><input type="text" id="pAge" placeholder="24歳"></div>
+      <div><label>職業</label><input type="text" id="pJob" placeholder="都内で働くOL"></div>
+      <div><label>性格</label><input type="text" id="pChar" placeholder="清楚で少し人見知り"></div>
+      <div><label>話し方・口調</label><input type="text" id="pTone" placeholder="親しみやすい。少し寂しがり。絵文字は控えめ"></div>
+      <div><label>趣味</label><input type="text" id="pHobby" placeholder="カフェ、旅行、映画"></div>
+      <div><label>裏垢を始めた理由</label><input type="text" id="pWhy" placeholder="普段言えない本音を投稿したい"></div>
+      <div><label>フォロワーとの距離感</label><input type="text" id="pDist" placeholder="友達以上、恋人未満"></div>
+    </div>
+    <div class="btn-row" style="margin-bottom:0">
+      <button class="btn-sub btn-mini" onclick="savePersona()">💾 この内容で保存</button>
+      <button class="btn-sub btn-mini" onclick="deletePersona()">🗑 選択中を削除</button>
+    </div>
+    <p class="tips">ペルソナはブラウザに保存されます（このPC内だけ）。<b>投稿ごとに人格がブレないこと</b>がファン化の土台です。</p>
+  </div>
+
+  <div class="card">
+    <h2>2. 投稿の素材</h2>
+    <div class="grid">
+      <div><label>画像のシチュエーション</label><select id="scene"></select></div>
+      <div><label>投稿タイプ</label>
+        <select id="postType">
+          <option value="mix" selected>おまかせ（3型を1案ずつ）</option>
+          <option value="daily">日常報告型</option>
+          <option value="consult">相談型</option>
+          <option value="story">ストーリー型</option>
+        </select>
+      </div>
+      <div><label>締め方</label>
+        <select id="ending">
+          <option value="q" selected>質問で締める（返信されやすい）</option>
+          <option value="soft">余韻で締める（質問なし）</option>
+        </select>
+      </div>
+      <div><label>長さ</label>
+        <select id="length">
+          <option value="short">短め（〜80字）</option>
+          <option value="mid" selected>ふつう（〜140字）</option>
+          <option value="long">長め（数行の語り）</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:12px"><label>画像の内容メモ（任意。書くと精度が上がります）</label>
+      <textarea id="imageMemo" style="min-height:60px" placeholder="例: 白ニットで寝室で自撮り。ピースしてる。夜の間接照明"></textarea>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-main" onclick="generate()">投稿文プロンプト生成</button>
+  </div>
+
+  <div class="card">
+    <h2>生成されたプロンプト</h2>
+    <textarea id="output" readonly placeholder="ここにプロンプトが表示されます。「投稿文プロンプト生成」を押してください。"></textarea>
+    <div class="btn-row" style="margin-bottom:0">
+      <button class="btn-main" id="copyBtn" onclick="copyPrompt()">コピーする</button>
+    </div>
+    <p class="tips">ChatGPTに貼ると投稿文が3案出ます。<b>画像も一緒に添付する</b>と、写っている小物や光に触れた文になって精度が上がります。<br>投稿の割合の目安: 日常5割 / 顔・私服2割 / 水着・季節2割 / 告知1割。毎日同じ型にしないのがコツ。</p>
+  </div>
+
+  <footer>
+    このツールは20歳以上の架空の成人キャラクター運用を前提としています。実在人物へのなりすまし・フォロワーを騙す運用は不可。<br>
+    <a href="index.html" style="color:#4da3ff">→ 画像プロンプトメーカーへ</a>
+  </footer>
+</div>
+
+<script>
+const SCENES = ["自宅の寝室（ホテルライク）","夜のベッドルーム","朝のキッチン","放課後のカフェ","デートの対面席","寝起きの自撮り","休日の朝のベッド","バスタイム","ジム帰り","温泉旅館","深夜のコンビニ帰り","夜のコインランドリー","真昼のビーチ","夕方のビーチ","海辺の遊歩道","ナイトプール","夏祭り","雨の無人駅","夜の都会","ナースの休憩時間","保育士の教室","新卒OLのオフィス残業","カフェ店員のバックヤード","スタジアム観戦","脱衣所・鏡前","夜の街・飲み会帰り","その他（画像メモに書く）"];
+
+const TYPE_GUIDE = {
+  daily: "【日常報告型】今日あった小さな出来事＋ちょっとした感情。例:「日焼け止め塗ったのに肩が赤くなってきた気がする」",
+  consult: "【相談型】小さな迷い・不安をフォロワーに相談する。例:「新しく買った水着、似合ってるかちょっと不安。白にして正解だったかな」",
+  story: "【ストーリー型】投稿に至るまでの経緯を短く語る。例:「本当は来る予定じゃなかったんだけど、昨日の夜に急に誘われて」",
+};
+
+function fillScenes() {
+  const el = document.getElementById("scene");
+  SCENES.forEach(s => { const o = document.createElement("option"); o.textContent = s; el.appendChild(o); });
+}
+
+// ---- ペルソナ保存 ----
+const P_FIELDS = ["pName","pAge","pJob","pChar","pTone","pHobby","pWhy","pDist"];
+function store() { return JSON.parse(localStorage.getItem("aibijo_personas") || "{}"); }
+function refreshSlots(selected) {
+  const el = document.getElementById("personaSlot");
+  el.innerHTML = "";
+  const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "（新規入力）"; el.appendChild(o0);
+  Object.keys(store()).forEach(k => {
+    const o = document.createElement("option"); o.value = k; o.textContent = k; el.appendChild(o);
+  });
+  if (selected) el.value = selected;
+}
+function savePersona() {
+  const name = document.getElementById("pName").value.trim();
+  if (!name) { alert("名前を入れてください（保存名になります）"); return; }
+  const s = store();
+  s[name] = Object.fromEntries(P_FIELDS.map(f => [f, document.getElementById(f).value]));
+  localStorage.setItem("aibijo_personas", JSON.stringify(s));
+  refreshSlots(name);
+}
+function loadPersona() {
+  const k = document.getElementById("personaSlot").value;
+  if (!k) return;
+  const p = store()[k]; if (!p) return;
+  P_FIELDS.forEach(f => document.getElementById(f).value = p[f] || "");
+}
+function deletePersona() {
+  const k = document.getElementById("personaSlot").value;
+  if (!k) return;
+  const s = store(); delete s[k];
+  localStorage.setItem("aibijo_personas", JSON.stringify(s));
+  refreshSlots("");
+}
+
+// ---- 生成 ----
+function v(id) { return document.getElementById(id).value.trim(); }
+function generate() {
+  const type = v("postType");
+  const typeText = type === "mix"
+    ? `以下の3タイプを1案ずつ:\n${TYPE_GUIDE.daily}\n${TYPE_GUIDE.consult}\n${TYPE_GUIDE.story}`
+    : `3案とも次のタイプで、切り口を変えて:\n${TYPE_GUIDE[type]}`;
+  const ending = v("ending") === "q"
+    ? "最後は自然な軽い質問で締めて、返信したくなる余地を作る（毎案違う聞き方で）"
+    : "質問はせず、余韻の残る一言で締める";
+  const lenMap = { short: "80字以内", mid: "140字以内", long: "140〜250字程度で数行に分ける" };
+  const persona = [
+    v("pName") && `名前: ${v("pName")}`,
+    `年齢: ${v("pAge") || "24歳"}（20歳以上の成人）`,
+    v("pJob") && `職業: ${v("pJob")}`,
+    v("pChar") && `性格: ${v("pChar")}`,
+    v("pTone") && `話し方: ${v("pTone")}`,
+    v("pHobby") && `趣味: ${v("pHobby")}`,
+    v("pWhy") && `裏垢を始めた理由: ${v("pWhy")}`,
+    v("pDist") && `フォロワーとの距離感: ${v("pDist")}`,
+  ].filter(Boolean).join("\n");
+  const memo = v("imageMemo");
+
+  const prompt =
+`あなたはX（旧Twitter）で活動する架空の成人女性キャラクターの中の人です。以下のペルソナに完全になりきって、画像に添える日本語の投稿文を3案作ってください。
+
+【ペルソナ】
+${persona || "24歳の都内OL。清楚で少し人見知り。親しみやすい口調"}
+
+【画像の内容】
+シチュエーション: ${v("scene")}${memo ? `\n詳細: ${memo}` : ""}
+（画像を添付している場合は、写っている小物・光・服装に軽く触れてよい）
+
+【投稿タイプ】
+${typeText}
+
+【書き方のルール】
+- 一人称の口語。友達へのLINEくらいの温度感で、完璧な文章にしない
+- 「今日あったこと」「小さな失敗や迷い」「ささいな感情」のどれかを必ず1つ入れて、画像の説明文にしない
+- ${ending}
+- 長さはそれぞれ${lenMap[v("length")]}
+- 絵文字は0〜2個まで。顔文字・ハッシュタグ・宣伝・リンク誘導・「フォローしてね」系は禁止
+- AIっぽい丁寧語（「〜ですね」「いかがでしょうか」）や広告っぽい言い回しは禁止
+- 3案はそれぞれ雰囲気を変える
+
+3案を番号付きで、投稿文だけを出力してください（解説は不要）。`;
+  document.getElementById("output").value = prompt;
+}
+
+function copyPrompt() {
+  const ta = document.getElementById("output");
+  if (!ta.value) return;
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const b = document.getElementById("copyBtn");
+    b.textContent = "コピーしました！"; b.classList.add("copy-ok");
+    setTimeout(() => { b.textContent = "コピーする"; b.classList.remove("copy-ok"); }, 1500);
+  });
+}
+
+fillScenes();
+refreshSlots("");
+</script>
+</body>
+</html>
